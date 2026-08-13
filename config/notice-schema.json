@@ -1,0 +1,67 @@
+{
+  "description": "Analyzer for extracting important information from notices",
+  "baseAnalyzerId": "prebuilt-documentAnalyzer",
+  "config": {
+    "returnDetails": true
+  },
+  "fieldSchema": {
+    "fields": {
+      "Title": {
+        "type": "string",
+        "method": "extract",
+        "description": "Title or heading of the notice"
+      },
+      "NoticeType": {
+        "type": "string",
+        "method": "classify",
+        "description": "Type of notice such as exam, internship, event, fee, holiday"
+      },
+      "Organization": {
+        "type": "string",
+        "method": "extract",
+        "description": "Organization or institution issuing the notice"
+      },
+      "TargetAudience": {
+        "type": "string",
+        "method": "extract",
+        "description": "Students or people for whom the notice is intended"
+      },
+      "Deadline": {
+        "type": "string",
+        "method": "extract",
+        "description": "Important deadline mentioned in the notice"
+      },
+      "Time": {
+        "type": "string",
+        "method": "extract",
+        "description": "Important time mentioned in the notice"
+      },
+      "Location": {
+        "type": "string",
+        "method": "extract",
+        "description": "Location mentioned in the notice"
+      },
+      "RequiredDocuments": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "method": "extract",
+        "description": "Documents required according to the notice"
+      },
+      "Instructions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "method": "extract",
+        "description": "Important instructions mentioned in the notice"
+      },
+      "ContactInformation": {
+        "type": "string",
+        "method": "extract",
+        "description": "Contact information mentioned in the notice"
+      }
+    }
+  }
+}
