@@ -5,5 +5,8 @@ azure-core
 azure-identity
 azure-ai-textanalytics
 openai
-bcrypt
+fastapi
+uvicorn
 sqlalchemy
+bcrypt
+pydantic
