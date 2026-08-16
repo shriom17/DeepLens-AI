@@ -28,3 +28,29 @@ class User(Base):
         DateTime,
         default=datetime.utcnow
     )
+
+class Notice(Base):
+
+    __tablename__ = "notices"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    user_id = Column(
+        Integer,
+        nullable=False
+    )
+
+    title = Column(String)
+
+    notice_type = Column(String)
+
+    deadline = Column(String)
+
+    location = Column(String)
+
+    summary = Column(String)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
