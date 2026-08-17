@@ -329,6 +329,188 @@ nav {
 }
 
 
+/* NAV ACTIONS CONTAINER */
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+
+/* SIGN IN BUTTON */
+
+.btn-signin {
+    background: transparent;
+    border: 1.5px solid var(--primary-light);
+    color: var(--primary-light);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(112, 187, 255, 0.15);
+}
+
+.btn-signin:hover {
+    background: rgba(112, 187, 255, 0.10);
+    border-color: var(--cyan);
+    color: var(--cyan);
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(112, 187, 255, 0.25);
+}
+
+.btn-signin:active {
+    transform: translateY(0);
+}
+
+
+/* LOG IN BUTTON */
+
+.btn-login {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border: none;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(77, 163, 255, 0.25);
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(77, 163, 255, 0.35);
+}
+
+.btn-login:active {
+    transform: translateY(0);
+}
+
+
+/* ---------------------------------------------------------
+   AUTHENTICATION
+--------------------------------------------------------- */
+
+.auth-container {
+    max-width: 420px;
+    margin: 60px auto;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.auth-header .section-title {
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, var(--primary-light), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+}
+
+.form-group input {
+    background: rgba(13, 29, 48, 0.6);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    padding: 12px 15px;
+    border-radius: 9px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.form-group input::placeholder {
+    color: var(--text-muted);
+}
+
+.form-group input:focus {
+    border-color: var(--primary-light);
+    background: rgba(13, 29, 48, 0.8);
+    box-shadow: 0 0 15px rgba(112, 187, 255, 0.15);
+}
+
+.form-group input:hover {
+    border-color: rgba(112, 187, 255, 0.3);
+}
+
+.auth-divider {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 1px;
+    background: var(--border);
+}
+
+.auth-divider::before {
+    left: 0;
+}
+
+.auth-divider::after {
+    right: 0;
+}
+
+.auth-footer {
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 13px;
+    margin-top: 15px;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: var(--primary-light);
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 5px;
+    text-decoration: underline;
+    transition: all 0.2s ease;
+}
+
+.link-btn:hover {
+    color: var(--cyan);
+}
+
+
 /* ---------------------------------------------------------
    HERO
 --------------------------------------------------------- */
@@ -1229,6 +1411,20 @@ nav {
 
     nav {
         margin-bottom: 35px;
+        flex-wrap: wrap;
+    }
+
+    .nav-actions {
+        width: 100%;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .btn-signin,
+    .btn-login {
+        flex: 1;
+        padding: 10px 12px;
+        font-size: 11px;
     }
 
     .hero h1 {
@@ -1249,6 +1445,32 @@ nav {
 
     .doc-card {
         padding: 21px;
+    }
+
+    .auth-container {
+        max-width: 100%;
+        margin: 30px 0;
+    }
+
+    .auth-header {
+        margin-bottom: 30px;
+    }
+
+    .auth-header .section-title {
+        font-size: 24px;
+    }
+
+    .auth-form {
+        gap: 16px;
+    }
+
+    .form-group label {
+        font-size: 11px;
+    }
+
+    .form-group input {
+        padding: 11px 12px;
+        font-size: 13px;
     }
 }
 
@@ -1287,13 +1509,33 @@ nav {
         </div>
 
 
-        <button
-            class="nav-link"
-            onclick="showScreen('dashboard')">
+        <div class="nav-actions">
 
-            My Notices
+            <button
+                class="nav-link"
+                onclick="showScreen('dashboard')">
 
-        </button>
+                My Notices
+
+            </button>
+
+            <button
+                class="btn-signin"
+                onclick="showScreen('signin')">
+
+                Sign In
+
+            </button>
+
+            <button
+                class="btn-login"
+                onclick="showScreen('login')">
+
+                Log In
+
+            </button>
+
+        </div>
 
     </nav>
 
@@ -1408,6 +1650,191 @@ nav {
                 class="empty-state">
 
                 No notices analyzed yet.
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         SIGN IN
+    ====================================================== -->
+
+    <section
+        id="screen-signin"
+        class="screen">
+
+        <div class="auth-container">
+
+            <div class="auth-header">
+
+                <h2 class="section-title">
+                    Create Account
+                </h2>
+
+                <div class="section-sub">
+                    Join NoticeSense AI to get started
+                </div>
+
+            </div>
+
+
+            <form class="auth-form" id="signupForm">
+
+                <div class="form-group">
+
+                    <label for="signupEmail">Email Address</label>
+
+                    <input
+                        type="email"
+                        id="signupEmail"
+                        placeholder="you@example.com"
+                        required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="signupPassword">Password</label>
+
+                    <input
+                        type="password"
+                        id="signupPassword"
+                        placeholder="At least 8 characters"
+                        required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="signupConfirm">Confirm Password</label>
+
+                    <input
+                        type="password"
+                        id="signupConfirm"
+                        placeholder="Confirm your password"
+                        required>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="btn btn-block">
+
+                    Create Account
+
+                </button>
+
+            </form>
+
+
+            <div class="auth-divider">
+                or
+            </div>
+
+
+            <div class="auth-footer">
+
+                Already have an account?
+
+                <button
+                    class="link-btn"
+                    onclick="showScreen('login')">
+
+                    Log In
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         LOG IN
+    ====================================================== -->
+
+    <section
+        id="screen-login"
+        class="screen">
+
+        <div class="auth-container">
+
+            <div class="auth-header">
+
+                <h2 class="section-title">
+                    Welcome Back
+                </h2>
+
+                <div class="section-sub">
+                    Log in to access your notices
+                </div>
+
+            </div>
+
+
+            <form class="auth-form" id="loginForm">
+
+                <div class="form-group">
+
+                    <label for="loginEmail">Email Address</label>
+
+                    <input
+                        type="email"
+                        id="loginEmail"
+                        placeholder="you@example.com"
+                        required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="loginPassword">Password</label>
+
+                    <input
+                        type="password"
+                        id="loginPassword"
+                        placeholder="Enter your password"
+                        required>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="btn btn-block">
+
+                    Log In
+
+                </button>
+
+            </form>
+
+
+            <div class="auth-divider">
+                or
+            </div>
+
+
+            <div class="auth-footer">
+
+                Don't have an account?
+
+                <button
+                    class="link-btn"
+                    onclick="showScreen('signin')">
+
+                    Sign Up
+
+                </button>
 
             </div>
 
@@ -1760,6 +2187,60 @@ function resetUpload() {
         .getElementById('stampMark')
         .classList.remove('show');
 
+}
+
+
+/* =========================================================
+   AUTHENTICATION FORMS
+========================================================= */
+
+// Sign Up Form Handler
+const signupForm = document.getElementById('signupForm');
+if (signupForm) {
+    signupForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const email = document.getElementById('signupEmail').value;
+        const password = document.getElementById('signupPassword').value;
+        const confirm = document.getElementById('signupConfirm').value;
+
+        if (password !== confirm) {
+            alert('Passwords do not match!');
+            return;
+        }
+
+        if (password.length < 8) {
+            alert('Password must be at least 8 characters!');
+            return;
+        }
+
+        // Here you would send data to your backend
+        console.log('Signup:', { email, password });
+        alert('Account created successfully! Please log in.');
+        
+        // Clear form and navigate to login
+        signupForm.reset();
+        showScreen('login');
+    });
+}
+
+// Login Form Handler
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        // Here you would send data to your backend
+        console.log('Login:', { email, password });
+        alert('Logged in successfully!');
+        
+        // Clear form and navigate to home
+        loginForm.reset();
+        showScreen('home');
+    });
 }
 
 
