@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-from backend.services.generative_ai import generate_summary, generate_actions
+from backend.services.generative_ai import generate_document_analysis
 
 
 load_dotenv()
@@ -58,29 +58,51 @@ def _extract_web_text(html: str) -> tuple[str, str]:
     return title, cleaned
 
 
-def _to_action_items(actions_text: str):
-    lines = [
-        line.strip("-* \t")
-        for line in actions_text.split("\n")
-        if line.strip()
-    ]
-    return lines if lines else actions_text
-
-
 def _build_gemini_notice_data(content: str, title: str) -> dict:
-    summary = generate_summary(content)
-    actions = generate_actions(content)
+    analysis = generate_document_analysis(content)
+
+    important = analysis.get("ImportantInformation") or {}
+    research = analysis.get("ResearchDetails") or {}
 
     notice_data = {
         "Title": title,
-        "AISummary": summary,
-        "Content": content[:12000]
+        "ExecutiveSummary": analysis.get("ExecutiveSummary", ""),
+        "KeyPoints": analysis.get("KeyPoints", []),
+        "ImportantDates": important.get("Dates", []),
+        "ImportantNames": important.get("Names", []),
+        "ImportantNumbers": important.get("Numbers", []),
+        "Deadlines": important.get("Deadlines", []),
+        "ActionItems": analysis.get("ActionItems", []),
+        "DocumentType": analysis.get("DocumentType", "Unknown")
     }
 
-    if actions:
-        notice_data["ActionItems"] = _to_action_items(actions)
+    research_problem = research.get("ResearchProblem")
+    methodology = research.get("Methodology")
+    key_findings = research.get("KeyFindings") or []
+    limitations = research.get("Limitations") or []
+    future_work = research.get("FutureWork") or []
 
-    return notice_data
+    if research_problem:
+        notice_data["ResearchProblem"] = research_problem
+    if methodology:
+        notice_data["Methodology"] = methodology
+    if key_findings:
+        notice_data["KeyFindings"] = key_findings
+    if limitations:
+        notice_data["Limitations"] = limitations
+    if future_work:
+        notice_data["FutureWork"] = future_work
+
+    # Remove empty fields to keep the response concise and user-friendly.
+    cleaned = {}
+    for key, value in notice_data.items():
+        if isinstance(value, list) and not value:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        cleaned[key] = value
+
+    return cleaned
 
 
 def _process_with_azure(file_bytes: bytes) -> dict:
