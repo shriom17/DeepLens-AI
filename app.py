@@ -966,7 +966,7 @@ def analyze():
     file_bytes = uploaded.read()
 
     try:
-        from services.notice_processor import process_notice
+      from backend.services.notice_processor import process_notice
     except Exception as e:
         return jsonify({
             "error": f"Backend AI service is not configured yet ({e.__class__.__name__}: {e}). "
@@ -985,8 +985,8 @@ def analyze():
 @app.route("/analyze-url", methods=["POST"])
 def analyze_url():
     """
-    URL-based analysis. Fetches the document server-side, then feeds it
-    through the same pipeline as file upload.
+    URL-based analysis. Delegates URL processing to notice_processor,
+    which routes between Azure and Gemini pipelines by AI_PROVIDER.
 
     SECURITY NOTE: fetching an arbitrary user-supplied URL from the server
     is an SSRF surface (it could be pointed at internal/private addresses).
@@ -1003,23 +1003,15 @@ def analyze_url():
         return jsonify({"error": "URL must start with http:// or https://"}), 400
 
     try:
-        import requests
-        resp = requests.get(url, timeout=15)
-        resp.raise_for_status()
-        file_bytes = resp.content
-    except Exception as e:
-        return jsonify({"error": f"Could not fetch URL: {e.__class__.__name__}: {e}"}), 502
-
-    try:
-        from services.notice_processor import process_notice
+      from backend.services.notice_processor import process_notice_url
     except Exception as e:
         return jsonify({
-            "error": f"Backend AI service is not configured yet ({e.__class__.__name__}: {e}). "
-                     "Check that ENDPOINT/ANALYZER are set and Azure credentials are available."
+        "error": f"Backend document service is not configured yet ({e.__class__.__name__}: {e}). "
+             "Check provider settings and required credentials in .env."
         }), 503
 
     try:
-        notice_data = process_notice(file_bytes)
+      notice_data = process_notice_url(url)
     except Exception as e:
         return jsonify({"error": f"Analysis failed: {e.__class__.__name__}: {e}"}), 502
 
@@ -1067,7 +1059,7 @@ def chat():
         document_context = NOTICES[document_id]["data"]
 
     try:
-        from services.generative_ai import answer_question
+      from backend.services.generative_ai import answer_question
     except Exception as e:
         return jsonify({
             "error": f"Chat isn't wired up yet ({e.__class__.__name__}: {e}). "

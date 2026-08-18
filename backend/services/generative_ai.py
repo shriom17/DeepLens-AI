@@ -1,7 +1,4 @@
-import os
-
-from dotenv import load_dotenv
-from openai import AzureOpenAI
+from backend.services.ai_provider import generate_response as _provider_generate_response
 
 from utils.prompts import (
     SUMMARY_PROMPT,
@@ -10,31 +7,8 @@ from utils.prompts import (
 )
 
 
-load_dotenv()
-
-client = AzureOpenAI(
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    api_key=os.getenv("AZURE_OPENAI_KEY"),
-    api_version="2024-10-21"
-)
-
-deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
-
-
 def generate_response(prompt):
-
-    response = client.chat.completions.create(
-        model=deployment,
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        temperature=0.2
-    )
-
-    return response.choices[0].message.content
+    return _provider_generate_response(prompt)
 
 
 def generate_summary(notice):

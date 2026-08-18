@@ -10,3 +10,7 @@ uvicorn
 sqlalchemy
 bcrypt
 pydantic
+google-generativeai
+google-genai
+pymupdf
+beautifulsoup4
