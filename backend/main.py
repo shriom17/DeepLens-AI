@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.routes.auth import router as auth_router
-# তোমার analyze/chat routes যেই file-এ আছে সেগুলোও এখানে import করতে হবে
+from backend.routes.analyze import router as analyze_router
 
 
 app = FastAPI(
@@ -10,6 +10,7 @@ app = FastAPI(
     description="Backend API for NoticeSense AI",
     version="1.0.0"
 )
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,7 +22,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 app.include_router(auth_router)
+app.include_router(analyze_router)
 
 
 @app.get("/")
