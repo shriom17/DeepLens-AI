@@ -1,5 +1,7 @@
 streamlit
 python-dotenv
+Flask
+flask-cors
 azure-ai-contentunderstanding
 azure-core
 azure-identity

@@ -2,8 +2,11 @@ import os
 import uuid
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template_string
+from flask_cors import CORS
 
 app = Flask(__name__)
+
+CORS(app)
 
 # In-memory store for now — swap for a DB later.
 # Structure: { id: { "data": {...}, "created_at": ..., "filename"/"source": ... } }
@@ -569,6 +572,7 @@ nav { display:flex; align-items:center; justify-content:space-between; padding: 
 </div>
 
 <script>
+const BACKEND_URL = "https://deeplens-ai-backend.onrender.com";
 let selectedFile = null;
 let selectedUrl = null;
 let activeSource = 'file';
@@ -670,9 +674,9 @@ async function startAnalysis() {
     if (activeSource === 'file') {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      response = await fetch('/analyze', { method: 'POST', body: formData });
+      response = await fetch(`${BACKEND_URL}/analyze`, { method: 'POST', body: formData });
     } else {
-      response = await fetch('/analyze-url', {
+      response = await fetch(`${BACKEND_URL}/analyze-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: selectedUrl })
@@ -791,7 +795,7 @@ function fieldIcon(name) {
 async function refreshNoticeList(targetId) {
   const el = document.getElementById(targetId);
   try {
-    const res = await fetch('/notices');
+    const res = await fetch(`${BACKEND_URL}/notices`);
     const list = await res.json();
     if (!list.length) { el.className = 'empty-state'; el.innerHTML = 'No documents yet.'; return; }
     el.className = '';
@@ -857,7 +861,7 @@ async function sendChat() {
   messages.scrollTop = messages.scrollHeight;
 
   try {
-    const res = await fetch('/chat', {
+    const res = await fetch(`${BACKEND_URL}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text, document_id: lastNoticeId })
