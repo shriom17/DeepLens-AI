@@ -16,3 +16,4 @@ google-generativeai
 google-genai
 pymupdf
 beautifulsoup4
+gunicorn
