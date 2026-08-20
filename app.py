@@ -574,7 +574,10 @@ nav { display:flex; align-items:center; justify-content:space-between; padding: 
 <script>
 // Use same-origin by default so local dev + single-service deployments work.
 // If you deploy frontend separately, replace this with your deployed API origin.
-const BACKEND_URL = ""; 
+const BACKEND_URL = window.location.hostname === "localhost" ||
+                    window.location.hostname === "127.0.0.1"
+                    ? "http://127.0.0.1:5000"
+                    : "https://deeplens-ai-backend.onrender.com";
 let selectedFile = null;
 let selectedUrl = null;
 let activeSource = 'file';
