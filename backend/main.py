@@ -1,6 +1,8 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.routes.auth import router as auth_router
+# তোমার analyze/chat routes যেই file-এ আছে সেগুলোও এখানে import করতে হবে
 
 
 app = FastAPI(
@@ -9,13 +11,21 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://deeplens-ai-frontend.onrender.com"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router)
 
 
 @app.get("/")
 def home():
-
     return {
         "message": "NoticeSense AI Backend is running!"
     }
