@@ -18,6 +18,8 @@ async def analyze_content(
             print("FILE:", file.filename)
             print("CONTENT TYPE:", file.content_type)
             print("FILE SIZE:", len(pdf_bytes))
+            print("FIRST BYTES:", pdf_bytes[:20])
+            print("MAGIC:", pdf_bytes[:4])
 
             if not pdf_bytes:
                 raise HTTPException(

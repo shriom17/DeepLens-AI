@@ -8,6 +8,7 @@ azure-identity
 azure-ai-textanalytics
 openai
 fastapi
+python-multipart
 uvicorn
 sqlalchemy
 bcrypt
@@ -15,5 +16,6 @@ pydantic
 google-generativeai
 google-genai
 pymupdf
+pypdf
 beautifulsoup4
 gunicorn

@@ -134,6 +134,14 @@ def extract_pdf(file_bytes: bytes, filename: Optional[str] = None) -> PDFExtract
     
     # Check for empty PDF
     if metadata.page_count == 0:
+        # If metadata extraction failed (e.g., missing pypdf), surface that cause instead
+        # of mislabeling the document as an empty PDF.
+        if metadata_error:
+            return PDFExtractionResult(
+                success=False,
+                metadata=metadata,
+                error=metadata_error
+            )
         return PDFExtractionResult(
             success=False,
             metadata=metadata,
