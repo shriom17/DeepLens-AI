@@ -11,7 +11,29 @@ load_dotenv()
 
 
 def _get_provider() -> str:
-    return (os.getenv("AI_PROVIDER") or "azure").strip().lower()
+    configured = (os.getenv("AI_PROVIDER") or "").strip().lower()
+    if configured:
+        return configured
+
+    # Auto-detect provider when AI_PROVIDER is not explicitly set.
+    # This avoids silently defaulting to Azure in deployments where only Gemini
+    # secrets were configured.
+    gemini_configured = bool(
+        (os.getenv("GEMINI_API_KEY") or "").strip()
+        and (os.getenv("GEMINI_MODEL") or "").strip()
+        and (os.getenv("GEMINI_FALLBACK_MODEL") or "").strip()
+    )
+    if gemini_configured:
+        return "gemini"
+
+    azure_configured = bool(
+        (os.getenv("ENDPOINT") or "").strip()
+        and (os.getenv("ANALYZER") or "").strip()
+    )
+    if azure_configured:
+        return "azure"
+
+    return "azure"
 
 
 def _is_pdf(file_bytes: bytes) -> bool:
@@ -109,7 +131,21 @@ def _process_with_azure(file_bytes: bytes) -> dict:
     from backend.services.azure_content import analyze_notice
 
     result = analyze_notice(file_bytes)
-    fields = result.contents[0].fields
+
+    contents = getattr(result, "contents", None) or []
+    if not contents:
+        raise RuntimeError(
+            "Azure Content Understanding returned no contents in the analysis result. "
+            "Check ENDPOINT/ANALYZER and that the uploaded file is supported."
+        )
+
+    fields = getattr(contents[0], "fields", None) or {}
+    if not fields:
+        raise RuntimeError(
+            "Azure analyzer returned 0 extracted fields. "
+            "This usually means ANALYZER is pointing at the wrong analyzer, the analyzer schema doesn't match, "
+            "or the analyzer isn't trained/published for this document type."
+        )
     notice_data = {}
 
     for field_name, field_value in fields.items():
@@ -125,6 +161,12 @@ def _process_with_azure(file_bytes: bytes) -> dict:
 
         else:
             notice_data[field_name] = str(field_value)
+
+    if not notice_data:
+        raise RuntimeError(
+            "Azure analysis completed but produced an empty notice payload. "
+            "Verify your analyzer field mappings."
+        )
 
     return notice_data
 

@@ -70,7 +70,29 @@ def _generate_gemini_with_retry(prompt: str, api_key: str, model_name: str) -> s
 
 
 def _get_provider() -> str:
-    return (os.getenv("AI_PROVIDER") or "azure").strip().lower()
+    configured = (os.getenv("AI_PROVIDER") or "").strip().lower()
+    if configured:
+        return configured
+
+    # Auto-detect provider when AI_PROVIDER is not explicitly set.
+    # Prefer Gemini when its secrets are configured.
+    gemini_configured = bool(
+        (os.getenv("GEMINI_API_KEY") or "").strip()
+        and (os.getenv("GEMINI_MODEL") or "").strip()
+        and (os.getenv("GEMINI_FALLBACK_MODEL") or "").strip()
+    )
+    if gemini_configured:
+        return "gemini"
+
+    azure_configured = bool(
+        (os.getenv("AZURE_OPENAI_ENDPOINT") or "").strip()
+        and (os.getenv("AZURE_OPENAI_KEY") or "").strip()
+        and (os.getenv("AZURE_OPENAI_DEPLOYMENT") or "").strip()
+    )
+    if azure_configured:
+        return "azure"
+
+    return "azure"
 
 
 def _generate_with_azure(prompt: str) -> str:
