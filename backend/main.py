@@ -5,8 +5,8 @@ from backend.routes.auth import router as auth_router
 from backend.routes.analyze import router as analyze_router
 
 app = FastAPI(
-    title="NoticeSense AI API",
-    description="Backend API for NoticeSense AI",
+    title="DeepLens AI Backend",
+    description="Backend API for DeepLense-AI",
     version="1.0.0"
 )
 
@@ -23,8 +23,9 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(analyze_router)
 
+
 @app.get("/")
 def home():
     return {
-        "message": "NoticeSense AI Backend is running!"
+        "message": "DeepLens-AI Backend is running!"
     }
