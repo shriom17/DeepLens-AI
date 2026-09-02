@@ -13,6 +13,26 @@ app = Flask(__name__)
 
 CORS(app)
 
+# Global error handlers to return JSON instead of HTML
+@app.errorhandler(500)
+def handle_500(error):
+    import traceback
+    tb = traceback.format_exc()
+    print(f"[500 ERROR]\n{tb}")
+    return jsonify({
+        "error": "Internal server error",
+        "message": str(error),
+    }), 500
+
+@app.errorhandler(404)
+def handle_404(error):
+    return jsonify({"error": "Endpoint not found"}), 404
+
+@app.before_request
+def before_request():
+    """Log incoming requests for debugging"""
+    print(f"[REQUEST] {request.method} {request.path}")
+
 # In-memory store for now — swap for a DB later.
 # Structure: { id: { "data": {...}, "created_at": ..., "filename"/"source": ... } }
 NOTICES = {}
@@ -964,32 +984,57 @@ function appendChatMsg(text, cls) {
 
 @app.route("/")
 def home():
-    return render_template_string(INDEX_HTML)
+    try:
+        return render_template_string(INDEX_HTML)
+    except Exception as e:
+        print(f"[HOME] Error rendering template: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to render homepage: {str(e)[:200]}"}), 500
 
+@app.route("/api/debug")
+def debug():
+    """Simple debug endpoint to verify Flask is working"""
+    return jsonify({
+        "status": "ok",
+        "message": "Flask app is running",
+        "timestamp": datetime.utcnow().isoformat()
+    })
 
 @app.route("/health")
 def health():
     """Lightweight runtime info to confirm what is deployed and how it is configured."""
+    diagnostics = {
+        "service": "flask",
+        "status": "ok",
+        "python_version": f"{__import__('sys').version}",
+        "env": {
+            "AI_PROVIDER": os.getenv("AI_PROVIDER", "NOT SET"),
+            "GEMINI_API_KEY_SET": bool((os.getenv("GEMINI_API_KEY") or "").strip()),
+            "GEMINI_MODEL": os.getenv("GEMINI_MODEL", "NOT SET"),
+            "ENDPOINT_SET": bool((os.getenv("ENDPOINT") or "").strip()),
+            "ANALYZER": os.getenv("ANALYZER", "NOT SET"),
+        },
+        "routes": ["/", "/health", "/analyze", "/analyze-url", "/notices", "/chat"],
+        "backend_services": {}
+    }
+    
+    # Try to import each backend service to see which ones work
+    services = ["notice_processor", "generative_ai", "ai_provider"]
+    for service in services:
+        try:
+            __import__(f"backend.services.{service}")
+            diagnostics["backend_services"][service] = "✓ OK"
+        except Exception as e:
+            diagnostics["backend_services"][service] = f"✗ {e.__class__.__name__}: {str(e)[:100]}"
+    
     try:
         from backend.services.notice_processor import _get_provider as notice_provider
+        diagnostics["notice_provider"] = notice_provider() if notice_provider else None
     except Exception as e:
-        notice_provider = None
-        notice_provider_error = f"{e.__class__.__name__}: {e}"
-    else:
-        notice_provider_error = None
+        diagnostics["notice_provider_error"] = f"{e.__class__.__name__}: {str(e)[:200]}"
 
-    return jsonify(
-        {
-            "service": "flask",
-            "notice_provider": notice_provider() if notice_provider else None,
-            "notice_provider_error": notice_provider_error,
-            "env": {
-                "AI_PROVIDER": os.getenv("AI_PROVIDER"),
-                "has_gemini": bool((os.getenv("GEMINI_API_KEY") or "").strip()),
-                "has_azure_content": bool((os.getenv("ENDPOINT") or "").strip() and (os.getenv("ANALYZER") or "").strip()),
-            },
-        }
-    )
+    return jsonify(diagnostics)
 
 
 def _store_result(notice_data, source_label):
@@ -1023,17 +1068,25 @@ def analyze():
             from backend.services.notice_processor import process_notice
         except Exception as e:
             print(f"[ANALYZE] Import error: {e}")
+            import traceback
+            traceback.print_exc()
             return jsonify({
-                "error": f"Backend AI service not configured ({e.__class__.__name__}: {str(e)[:100]}). "
-                         "Check environment variables: AI_PROVIDER, GEMINI_API_KEY, or ENDPOINT/ANALYZER."
+                "error": f"Backend service failed to load ({e.__class__.__name__})",
+                "details": str(e)[:200],
+                "fix": "Check environment variables and backend service logs"
             }), 503
 
         try:
+            print(f"[ANALYZE] Processing file: {uploaded.filename}")
             notice_data = process_notice(file_bytes)
+            print(f"[ANALYZE] Success: {uploaded.filename}")
         except Exception as e:
             print(f"[ANALYZE] Processing error: {e}")
+            import traceback
+            traceback.print_exc()
             return jsonify({
-                "error": f"Analysis failed ({e.__class__.__name__}): {str(e)[:200]}"
+                "error": f"Analysis failed ({e.__class__.__name__})",
+                "details": str(e)[:200]
             }), 502
 
         doc_id = _store_result(notice_data, uploaded.filename)
@@ -1041,7 +1094,12 @@ def analyze():
         
     except Exception as e:
         print(f"[ANALYZE] Unexpected error: {e}")
-        return jsonify({"error": f"Unexpected error: {str(e)[:200]}"}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "error": "Unexpected error in analyze",
+            "message": str(e)[:200]
+        }), 500
 
 
 @app.route("/analyze-url", methods=["POST"])
