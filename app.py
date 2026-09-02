@@ -572,12 +572,12 @@ nav { display:flex; align-items:center; justify-content:space-between; padding: 
 </div>
 
 <script>
-// Use same-origin by default so local dev + single-service deployments work.
-// If you deploy frontend separately, replace this with your deployed API origin.
-const BACKEND_URL = window.location.hostname === "localhost" ||
-                    window.location.hostname === "127.0.0.1"
-                    ? "http://127.0.0.1:5000"
-                    : "https://deeplens-ai-backend.onrender.com";
+// Detect environment and set API endpoint:
+// - Local: FastAPI backend on port 8000 (if running separately)
+// - Render: relative URLs (Flask serves both frontend + API)
+const BACKEND_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ? "http://127.0.0.1:8000"  // Local development: separate FastAPI backend
+  : "";  // Production (Render): relative URLs (same origin)
 let selectedFile = null;
 let selectedUrl = null;
 let activeSource = 'file';
@@ -947,6 +947,31 @@ function appendChatMsg(text, cls) {
 @app.route("/")
 def home():
     return render_template_string(INDEX_HTML)
+
+
+@app.route("/health")
+def health():
+    """Lightweight runtime info to confirm what is deployed and how it is configured."""
+    try:
+        from backend.services.notice_processor import _get_provider as notice_provider
+    except Exception as e:
+        notice_provider = None
+        notice_provider_error = f"{e.__class__.__name__}: {e}"
+    else:
+        notice_provider_error = None
+
+    return jsonify(
+        {
+            "service": "flask",
+            "notice_provider": notice_provider() if notice_provider else None,
+            "notice_provider_error": notice_provider_error,
+            "env": {
+                "AI_PROVIDER": os.getenv("AI_PROVIDER"),
+                "has_gemini": bool((os.getenv("GEMINI_API_KEY") or "").strip()),
+                "has_azure_content": bool((os.getenv("ENDPOINT") or "").strip() and (os.getenv("ANALYZER") or "").strip()),
+            },
+        }
+    )
 
 
 def _store_result(notice_data, source_label):
