@@ -3,6 +3,11 @@ import uuid
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (local dev only)
+# On Render, env vars are set in the dashboard, not from .env
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -687,9 +692,22 @@ async function startAnalysis() {
         body: JSON.stringify({ url: selectedUrl })
       });
     }
-    const data = await response.json();
+    
+    // Check if response has content
+    const contentType = response.headers.get('content-type');
+    const text = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('Response parse error. Status:', response.status, 'Body:', text);
+      data = { error: `Server error: ${response.status}. Response: ${text.substring(0, 200)}` };
+    }
+    
     setTimeout(() => renderResult(data, response.ok), 1500);
   } catch (error) {
+    console.error('Fetch error:', error);
     setTimeout(() => renderResult({ error: 'Network error: ' + error.message }, false), 1500);
   }
 }
@@ -991,30 +1009,39 @@ def analyze():
     still boots even when Azure credentials (DefaultAzureCredential) aren't
     configured on this machine.
     """
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded."}), 400
-
-    uploaded = request.files["file"]
-    if uploaded.filename == "":
-        return jsonify({"error": "Empty filename."}), 400
-
-    file_bytes = uploaded.read()
-
     try:
-      from backend.services.notice_processor import process_notice
-    except Exception as e:
-        return jsonify({
-            "error": f"Backend AI service is not configured yet ({e.__class__.__name__}: {e}). "
-                     "Check that ENDPOINT/ANALYZER are set and Azure credentials are available."
-        }), 503
+        if "file" not in request.files:
+            return jsonify({"error": "No file uploaded."}), 400
 
-    try:
-        notice_data = process_notice(file_bytes)
-    except Exception as e:
-        return jsonify({"error": f"Analysis failed: {e.__class__.__name__}: {e}"}), 502
+        uploaded = request.files["file"]
+        if uploaded.filename == "":
+            return jsonify({"error": "Empty filename."}), 400
 
-    doc_id = _store_result(notice_data, uploaded.filename)
-    return jsonify({"id": doc_id, "data": notice_data})
+        file_bytes = uploaded.read()
+
+        try:
+            from backend.services.notice_processor import process_notice
+        except Exception as e:
+            print(f"[ANALYZE] Import error: {e}")
+            return jsonify({
+                "error": f"Backend AI service not configured ({e.__class__.__name__}: {str(e)[:100]}). "
+                         "Check environment variables: AI_PROVIDER, GEMINI_API_KEY, or ENDPOINT/ANALYZER."
+            }), 503
+
+        try:
+            notice_data = process_notice(file_bytes)
+        except Exception as e:
+            print(f"[ANALYZE] Processing error: {e}")
+            return jsonify({
+                "error": f"Analysis failed ({e.__class__.__name__}): {str(e)[:200]}"
+            }), 502
+
+        doc_id = _store_result(notice_data, uploaded.filename)
+        return jsonify({"id": doc_id, "data": notice_data})
+        
+    except Exception as e:
+        print(f"[ANALYZE] Unexpected error: {e}")
+        return jsonify({"error": f"Unexpected error: {str(e)[:200]}"}), 500
 
 
 @app.route("/analyze-url", methods=["POST"])
@@ -1029,29 +1056,38 @@ def analyze_url():
     local demo, not for a deployed service. If this ever goes further than
     a classroom project, add URL validation before the request.
     """
-    payload = request.get_json(silent=True) or {}
-    url = (payload.get("url") or "").strip()
-
-    if not url:
-        return jsonify({"error": "No URL provided."}), 400
-    if not (url.startswith("http://") or url.startswith("https://")):
-        return jsonify({"error": "URL must start with http:// or https://"}), 400
-
     try:
-      from backend.services.notice_processor import process_notice_url
-    except Exception as e:
-        return jsonify({
-        "error": f"Backend document service is not configured yet ({e.__class__.__name__}: {e}). "
-             "Check provider settings and required credentials in .env."
-        }), 503
+        payload = request.get_json(silent=True) or {}
+        url = (payload.get("url") or "").strip()
 
-    try:
-      notice_data = process_notice_url(url)
-    except Exception as e:
-        return jsonify({"error": f"Analysis failed: {e.__class__.__name__}: {e}"}), 502
+        if not url:
+            return jsonify({"error": "No URL provided."}), 400
+        if not (url.startswith("http://") or url.startswith("https://")):
+            return jsonify({"error": "URL must start with http:// or https://"}), 400
 
-    doc_id = _store_result(notice_data, url)
-    return jsonify({"id": doc_id, "data": notice_data})
+        try:
+            from backend.services.notice_processor import process_notice_url
+        except Exception as e:
+            print(f"[ANALYZE-URL] Import error: {e}")
+            return jsonify({
+                "error": f"Backend document service not configured ({e.__class__.__name__}: {str(e)[:100]}). "
+                         "Check environment variables."
+            }), 503
+
+        try:
+            notice_data = process_notice_url(url)
+        except Exception as e:
+            print(f"[ANALYZE-URL] Processing error: {e}")
+            return jsonify({
+                "error": f"URL analysis failed ({e.__class__.__name__}): {str(e)[:200]}"
+            }), 502
+
+        doc_id = _store_result(notice_data, url)
+        return jsonify({"id": doc_id, "data": notice_data})
+        
+    except Exception as e:
+        print(f"[ANALYZE-URL] Unexpected error: {e}")
+        return jsonify({"error": f"Unexpected error: {str(e)[:200]}"}), 500
 
 
 @app.route("/notices", methods=["GET"])
