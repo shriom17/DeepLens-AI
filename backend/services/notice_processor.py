@@ -21,7 +21,6 @@ def _get_provider() -> str:
     gemini_configured = bool(
         (os.getenv("GEMINI_API_KEY") or "").strip()
         and (os.getenv("GEMINI_MODEL") or "").strip()
-        and (os.getenv("GEMINI_FALLBACK_MODEL") or "").strip()
     )
     if gemini_configured:
         return "gemini"

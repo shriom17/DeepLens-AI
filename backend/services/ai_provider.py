@@ -23,6 +23,14 @@ def _is_gemini_service_unavailable(exc: Exception) -> bool:
     return "503" in message and "unavailable" in message
 
 
+def _is_gemini_retryable(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return any(
+        marker in message
+        for marker in ("429", "500", "502", "503", "504", "unavailable")
+    )
+
+
 def _generate_gemini_once(prompt: str, api_key: str, model_name: str) -> str:
     if legacy_genai is not None:
         legacy_genai.configure(api_key=api_key)
@@ -48,7 +56,7 @@ def _generate_gemini_once(prompt: str, api_key: str, model_name: str) -> str:
 
 
 def _generate_gemini_with_retry(prompt: str, api_key: str, model_name: str) -> str:
-    retry_attempts = 2
+    retry_attempts = 3
     retry_delay_seconds = 1
 
     last_error = None
@@ -57,12 +65,12 @@ def _generate_gemini_with_retry(prompt: str, api_key: str, model_name: str) -> s
         try:
             return _generate_gemini_once(prompt, api_key, model_name)
         except Exception as exc:
-            if not _is_gemini_service_unavailable(exc):
+            if not _is_gemini_retryable(exc):
                 raise
 
             last_error = exc
             if attempt < retry_attempts:
-                time.sleep(retry_delay_seconds)
+                time.sleep(retry_delay_seconds * (2 ** attempt))
 
     raise RuntimeError(
         f"Gemini model '{model_name}' failed after retries with 503 UNAVAILABLE: {last_error}"
@@ -79,7 +87,6 @@ def _get_provider() -> str:
     gemini_configured = bool(
         (os.getenv("GEMINI_API_KEY") or "").strip()
         and (os.getenv("GEMINI_MODEL") or "").strip()
-        and (os.getenv("GEMINI_FALLBACK_MODEL") or "").strip()
     )
     if gemini_configured:
         return "gemini"
@@ -146,23 +153,31 @@ def _generate_with_gemini(prompt: str) -> str:
         raise ValueError("Missing Gemini configuration: GEMINI_API_KEY")
     if not model_name:
         raise ValueError("Missing Gemini configuration: GEMINI_MODEL")
-    if not fallback_model_name:
-        raise ValueError("Missing Gemini configuration: GEMINI_FALLBACK_MODEL")
 
-    try:
-        return _generate_gemini_with_retry(prompt, api_key, model_name)
-    except Exception as primary_exc:
-        if not _is_gemini_service_unavailable(primary_exc):
-            raise
+    model_names = [model_name]
+    if fallback_model_name and fallback_model_name not in model_names:
+        model_names.append(fallback_model_name)
 
+    errors = []
+    for candidate in model_names:
         try:
-            return _generate_gemini_with_retry(prompt, api_key, fallback_model_name)
-        except Exception as fallback_exc:
-            raise RuntimeError(
-                "Gemini generation failed for both configured models "
-                f"('{model_name}' and '{fallback_model_name}'). "
-                f"Primary error: {primary_exc}. Fallback error: {fallback_exc}"
-            ) from fallback_exc
+            return _generate_gemini_with_retry(prompt, api_key, candidate)
+        except Exception as exc:
+            errors.append(f"{candidate}: {exc}")
+
+    if (
+        (os.getenv("AZURE_OPENAI_ENDPOINT") or "").strip()
+        and (os.getenv("AZURE_OPENAI_KEY") or "").strip()
+        and (os.getenv("AZURE_OPENAI_DEPLOYMENT") or "").strip()
+    ):
+        try:
+            return _generate_with_azure(prompt)
+        except Exception as azure_exc:
+            errors.append(f"azure: {azure_exc}")
+
+    raise RuntimeError(
+        "Gemini generation failed for configured models. " + "; ".join(errors)
+    ) from None
 
 
 def generate_response(prompt: str) -> str:
